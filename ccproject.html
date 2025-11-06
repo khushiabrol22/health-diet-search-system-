@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriSearch - Health Diet Explorer</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Lucide Icons for aesthetic icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Configure Tailwind theme -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-green': '#10b981', // Emerald 500
+                        'secondary-blue': '#3b82f6', // Blue 500
+                        'bg-light': '#f7f9fb', // Light subtle gray-blue
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        /* Custom scrollbar styling for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #9ca3af; /* Gray-400 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; /* Gray-500 */
+        }
+        /* Custom class for active filter button */
+        .active-filter {
+            background-color: #10b981 !important; /* primary-green */
+            color: white !important;
+            border-color: #10b981 !important;
+        }
+    </style>
+</head>
+<body class="bg-bg-light min-h-screen font-sans">
+
+    <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <!-- Header -->
+        <header class="text-center py-8 mb-8 bg-white shadow-xl rounded-2xl">
+            <div class="inline-flex items-center space-x-3">
+                <i data-lucide="leaf" class="w-8 h-8 text-primary-green"></i>
+                <h1 class="text-4xl font-extrabold text-gray-800 tracking-tight">
+                    NutriSearch
+                </h1>
+            </div>
+            <p class="mt-2 text-lg text-gray-500">Find healthy, wholesome foods to power your life.</p>
+        </header>
+
+        <!-- Search Input Section -->
+        <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl mb-8">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
+                <i data-lucide="search" class="w-5 h-5 mr-2 text-secondary-blue"></i>
+                What are you craving?
+            </h2>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="e.g., salmon, avocado, spinach..."
+                    class="flex-grow p-3 border border-gray-300 rounded-xl focus:border-primary-green focus:ring focus:ring-primary-green/50 outline-none transition duration-150"
+                    onkeydown="if(event.key === 'Enter') handleSearch()"
+                >
+                <button 
+                    id="searchButton" 
+                    onclick="handleSearch()"
+                    class="bg-primary-green hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition duration-300 transform hover:scale-[1.01] flex items-center justify-center whitespace-nowrap"
+                >
+                    <i data-lucide="zap" class="w-5 h-5 mr-2"></i>
+                    Quick Search
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div id="filterBar" class="bg-white p-4 rounded-xl shadow-md mb-8">
+            <h3 class="text-lg font-medium text-gray-700 mb-3 flex items-center">
+                <i data-lucide="filter" class="w-4 h-4 mr-2 text-secondary-blue"></i>
+                Quick Filters:
+            </h3>
+            <div class="flex flex-wrap gap-3">
+                <button 
+                    data-filter="all" 
+                    onclick="setFilter('all')"
+                    class="filter-button px-4 py-2 text-sm font-semibold rounded-full border border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 transition duration-150 active-filter"
+                >
+                    All Items
+                </button>
+                <button 
+                    data-filter="protein" 
+                    onclick="setFilter('protein')"
+                    class="filter-button px-4 py-2 text-sm font-semibold rounded-full border border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 transition duration-150"
+                >
+                    <i data-lucide="beef" class="w-4 h-4 inline mr-1"></i> High Protein
+                </button>
+                <button 
+                    data-filter="carbs" 
+                    onclick="setFilter('carbs')"
+                    class="filter-button px-4 py-2 text-sm font-semibold rounded-full border border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 transition duration-150"
+                >
+                    <i data-lucide="loaf-of-bread" class="w-4 h-4 inline mr-1"></i> Low Carb
+                </button>
+                <button 
+                    data-filter="fiber" 
+                    onclick="setFilter('fiber')"
+                    class="filter-button px-4 py-2 text-sm font-semibold rounded-full border border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 transition duration-150"
+                >
+                    <i data-lucide="bar-chart-3" class="w-4 h-4 inline mr-1"></i> High Fiber
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Display Area -->
+        <main>
+            <h2 class="text-3xl font-bold text-gray-700 mb-6">Search Results</h2>
+            <div id="resultsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Results will be injected here -->
+                <div class="col-span-full text-center p-12 bg-white rounded-xl shadow-md text-gray-500" id="initialMessage">
+                    <i data-lucide="lightbulb" class="w-10 h-10 mx-auto mb-3 text-secondary-blue"></i>
+                    <p class="text-lg">Enter a food item above or use the Quick Filters to explore items.</p>
+                </div>
+            </div>
+            
+            <!-- Loading Indicator (hidden by default) -->
+            <div id="loadingIndicator" class="hidden col-span-full text-center p-12 bg-white rounded-xl shadow-md">
+                <div class="flex justify-center items-center">
+                    <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-primary-green" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-xl text-primary-green font-medium">Searching for healthy options...</span>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="mt-16 pt-6 border-t border-gray-200 text-center text-gray-500 text-sm">
+            <p>&copy; 2025 NutriSearch Demo. Data simulated for demonstration purposes only.</p>
+            <p class="mt-1">Built with HTML, JavaScript, and Tailwind CSS.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        // Data for the simulated diet search system.
+        const dietData = [
+            // Added two new items for better filter demonstration
+            { name: "Grilled Salmon", cals: 450, protein: 40, fat: 25, carbs: 0, fiber: 0, desc: "Excellent source of Omega-3 fatty acids and lean protein." },
+            { name: "Avocado Toast", cals: 300, protein: 10, fat: 20, carbs: 25, fiber: 8, desc: "A healthy fat and fiber-rich breakfast on whole-grain bread." },
+            { name: "Spinach Salad", cals: 150, protein: 5, fat: 5, carbs: 15, fiber: 6, desc: "Packed with vitamins, iron, and antioxidants. Low calorie." },
+            { name: "Quinoa Bowl", cals: 380, protein: 14, fat: 6, carbs: 65, fiber: 10, desc: "A complete protein and complex carbohydrate source." },
+            { name: "Greek Yogurt", cals: 120, protein: 17, fat: 4, carbs: 7, fiber: 0, desc: "High-protein snack, great for gut health (probiotics)." },
+            { name: "Lentil Soup", cals: 250, protein: 18, fat: 4, carbs: 35, fiber: 15, desc: "Hearty, high-fiber, and plant-based protein meal." },
+            { name: "Chicken Breast (Baked)", cals: 200, protein: 35, fat: 5, carbs: 0, fiber: 0, desc: "Extremely lean protein, versatile for any diet." },
+            { name: "Blueberries", cals: 80, protein: 1, fat: 0, carbs: 21, fiber: 4, desc: "Antioxidant super-fruit. Great for brain health." },
+            { name: "Oatmeal", cals: 180, protein: 6, fat: 3, carbs: 32, fiber: 5, desc: "Excellent source of soluble fiber for heart health." },
+            { name: "Sweet Potato", cals: 110, protein: 2, fat: 0, carbs: 26, fiber: 4, desc: "Complex carbohydrate, rich in Vitamin A." },
+            { name: "Tofu Scramble", cals: 220, protein: 20, fat: 12, carbs: 10, fiber: 3, desc: "Vegan high-protein breakfast alternative." },
+            { name: "Celery Sticks", cals: 10, protein: 0, fat: 0, carbs: 2, fiber: 1, desc: "Extremely low-calorie, negative calorie food." },
+        ];
+
+        const resultsContainer = document.getElementById('resultsContainer');
+        const searchInput = document.getElementById('searchInput');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const initialMessage = document.getElementById('initialMessage');
+        const filterButtons = document.querySelectorAll('.filter-button');
+
+        // Global state for the active filter
+        let activeFilter = 'all';
+
+        /**
+         * Applies the current filter logic to a set of food items.
+         * @param {Array} items The array of food objects to filter.
+         * @param {string} filter The filter key ('all', 'protein', 'carbs', 'fiber').
+         * @returns {Array} The filtered array.
+         */
+        function filterResults(items, filter) {
+            switch (filter) {
+                case 'protein':
+                    // High Protein: items with 15g protein or more
+                    return items.filter(item => item.protein >= 15);
+                case 'carbs':
+                    // Low Carb: items with 20g carbs or less
+                    return items.filter(item => item.carbs <= 20);
+                case 'fiber':
+                    // High Fiber: items with 5g fiber or more
+                    return items.filter(item => item.fiber >= 5);
+                case 'all':
+                default:
+                    return items;
+            }
+        }
+        
+        /**
+         * Simulates an asynchronous search operation.
+         * @param {string} query The search term.
+         * @returns {Promise<Array>} A promise that resolves with the filtered diet items.
+         */
+        async function searchDietItems(query) {
+            return new Promise(resolve => {
+                // Simulate network latency (250ms to 800ms)
+                const delay = 250 + Math.random() * 550;
+                setTimeout(() => {
+                    const normalizedQuery = query.toLowerCase().trim();
+                    
+                    let baseResults = dietData;
+                    
+                    // 1. Apply Search Query filtering
+                    if (normalizedQuery) {
+                         baseResults = dietData.filter(item => 
+                            item.name.toLowerCase().includes(normalizedQuery) || 
+                            item.desc.toLowerCase().includes(normalizedQuery)
+                        );
+                    }
+                    
+                    // 2. Apply Quick Filter filtering
+                    const finalResults = filterResults(baseResults, activeFilter);
+                    
+                    resolve(finalResults);
+                }, delay);
+            });
+        }
+
+        /**
+         * Updates the active filter state and triggers a re-search/re-display.
+         * @param {string} filterKey The key of the filter to set.
+         */
+        function setFilter(filterKey) {
+            activeFilter = filterKey;
+            
+            // Update button styles
+            filterButtons.forEach(button => {
+                if (button.getAttribute('data-filter') === filterKey) {
+                    button.classList.add('active-filter');
+                } else {
+                    button.classList.remove('active-filter');
+                }
+            });
+
+            // Trigger search with the current input value and new filter
+            handleSearch();
+        }
+
+        /**
+         * Renders the nutritional data cards into the UI.
+         * @param {Array} results The array of food objects to display.
+         */
+        function displayResults(results) {
+            resultsContainer.innerHTML = ''; // Clear previous results
+            
+            if (initialMessage) {
+                initialMessage.classList.add('hidden');
+            }
+
+            if (results.length === 0) {
+                const searchTxt = searchInput.value.trim() ? `for "${searchInput.value.trim()}"` : '';
+                resultsContainer.innerHTML = `
+                    <div class="col-span-full text-center p-12 bg-white rounded-xl shadow-md">
+                        <i data-lucide="frown" class="w-10 h-10 mx-auto mb-3 text-red-500"></i>
+                        <p class="text-xl font-semibold text-gray-700">No results found ${searchTxt}.</p>
+                        <p class="text-gray-500 mt-1">Try changing your search term or filter selection.</p>
+                    </div>
+                `;
+            } else {
+                results.forEach(item => {
+                    // Utility function to generate a stat block
+                    const statBlock = (iconName, value, unit, color) => `
+                        <div class="flex flex-col items-center justify-center p-3 bg-gray-50 rounded-lg shadow-sm">
+                            <i data-lucide="${iconName}" class="w-5 h-5 mb-1 ${color}"></i>
+                            <span class="text-lg font-bold text-gray-800">${value}</span>
+                            <span class="text-xs text-gray-500 uppercase">${unit}</span>
+                        </div>
+                    `;
+
+                    const cardHtml = `
+                        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden hover:shadow-primary-green/30 transition duration-300 transform hover:-translate-y-1 border border-gray-100">
+                            <div class="p-6">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-2xl font-bold text-gray-800">${item.name}</h3>
+                                    <span class="text-primary-green font-extrabold text-xl bg-primary-green/10 px-3 py-1 rounded-full">${item.cals} Cal</span>
+                                </div>
+                                
+                                <p class="text-gray-600 mb-5 text-sm">${item.desc}</p>
+                                
+                                <div class="grid grid-cols-4 gap-3 text-center">
+                                    ${statBlock('beef', item.protein, 'Protein (g)', 'text-blue-500')}
+                                    ${statBlock('egg', item.fat, 'Fat (g)', 'text-yellow-500')}
+                                    ${statBlock('loaf-of-bread', item.carbs, 'Carbs (g)', 'text-red-500')}
+                                    ${statBlock('bar-chart-3', item.fiber, 'Fiber (g)', 'text-primary-green')}
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 px-6 py-3 border-t border-gray-100 text-xs text-gray-400">
+                                Nutritional data per standard serving.
+                            </div>
+                        </div>
+                    `;
+                    resultsContainer.innerHTML += cardHtml;
+                });
+            }
+            // After rendering HTML, ensure Lucide icons are correctly rendered
+            lucide.createIcons();
+        }
+
+        /**
+         * Main function to handle the search button click/enter press.
+         * This function now uses the activeFilter state.
+         */
+        async function handleSearch() {
+            const query = searchInput.value;
+            
+            // If query is empty and we are not filtering, show initial message.
+            if (!query.trim() && activeFilter === 'all') {
+                if (initialMessage) {
+                    initialMessage.classList.remove('hidden');
+                }
+                resultsContainer.innerHTML = '';
+                return;
+            }
+
+            // 1. Show Loading State
+            resultsContainer.innerHTML = '';
+            loadingIndicator.classList.remove('hidden');
+
+            // 2. Perform Search (Simulated API call)
+            try {
+                // searchDietItems now handles both query and current filter
+                const results = await searchDietItems(query);
+                
+                // 3. Hide Loading State
+                loadingIndicator.classList.add('hidden');
+
+                // 4. Display Results
+                displayResults(results);
+
+            } catch (error) {
+                // 5. Handle Error
+                loadingIndicator.classList.add('hidden');
+                console.error("Search failed:", error);
+                resultsContainer.innerHTML = `
+                    <div class="col-span-full text-center p-12 bg-red-50 rounded-xl shadow-md text-red-700">
+                        <i data-lucide="bug" class="w-10 h-10 mx-auto mb-3"></i>
+                        <p class="text-xl font-semibold">An error occurred during the search simulation.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+            }
+        }
+        
+        // Initialize Lucide icons on page load for the static elements
+        window.onload = () => {
+            lucide.createIcons();
+            // Perform an initial search to show all results if filter is 'all'
+            setFilter('all');
+            handleSearch();
+        };
+
+    </script>
+</body>
+</html>
